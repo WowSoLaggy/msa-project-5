@@ -4,90 +4,78 @@
 
 ### Обоснование выбора
 
-**Apache Airflow** - оптимальное решение для требований задачи:
+**Apache Airflow** выбран, потому что:
 
-#### 1. Готовые интеграции (провайдеры)
-- ✅ **BigQuery**: `apache-airflow-providers-google`
-- ✅ **Redshift**: `apache-airflow-providers-amazon` 
-- ✅ **Kafka**: `apache-airflow-providers-apache-kafka`
-- ✅ **Spark**: `apache-airflow-providers-apache-spark`
+#### 1. Готовые интеграции
+- **BigQuery**: `apache-airflow-providers-google`
+- **Redshift**: `apache-airflow-providers-amazon` 
+- **Kafka**: `apache-airflow-providers-apache-kafka`
+- **Spark**: `apache-airflow-providers-apache-spark`
 
-Все интеграции устанавливаются через pip и имеют готовые операторы.
+Все устанавливаются через pip.
 
-#### 2. Поддержка требуемого функционала
+#### 2. Поддержка нужного функционала
 
-| Требование | Поддержка | Реализация |
-|------------|-----------|------------|
-| Ветвление пайплайна | ✅ Да | `BranchPythonOperator` |
-| Условные операторы | ✅ Да | `trigger_rule`, условия в Python |
-| Event-triggers | ✅ Да | Sensors, API triggers |
-| Retry логика | ✅ Да | Встроенная с экспоненциальной задержкой |
-| Fallback logic | ✅ Да | `on_failure_callback` |
-| Email уведомления | ✅ Да | Встроенные, настраиваются в DAG |
+- **Ветвление пайплайна**: `BranchPythonOperator`
+- **Условия**: `trigger_rule`, условия в Python
+- **Event-triggers**: Sensors, API triggers
+- **Retry**: встроенный с экспоненциальной задержкой
+- **Fallback**: `on_failure_callback`
+- **Email**: встроенные уведомления
 
-#### 3. Облачное развертывание
+#### 3. Развертывание в облаке
 
-- **AWS**: MWAA (Managed Workflows for Apache Airflow)
-- **GCP**: Cloud Composer (полностью управляемый Airflow)
-- **Azure**: Самостоятельное развертывание в AKS
-- **Kubernetes**: Официальные Helm charts для любого облака
-
-**Преимущества управляемых сервисов:**
-- Автоматические обновления
-- Встроенный мониторинг
-- Масштабирование из коробки
-- Интеграция с облачными сервисами
+- **AWS**: MWAA
+- **GCP**: Cloud Composer
+- **Azure**: развертывание в AKS
+- **Kubernetes**: Helm charts
 
 #### 4. Масштабирование
 
-Для обработки ~1 млн записей используются:
-- **LocalExecutor** - для простых задач
-- **CeleryExecutor** - для распределенной обработки
-- **KubernetesExecutor** - для динамического масштабирования
+Для обработки больших объемов данных (~1 млн записей):
+- **LocalExecutor** - простые задачи
+- **CeleryExecutor** - распределенная обработка
+- **KubernetesExecutor** - динамическое масштабирование
 
 ---
 
 ## POC (Proof of Concept)
 
-### Демонстрируемая функциональность
+### Что демонстрирует POC
 
-1. ✅ Чтение данных из CSV файла (симуляция файлового хранилища)
-2. ✅ Анализ данных и ветвление пайплайна по условию
-3. ✅ Retry-политика с экспоненциальной задержкой
-4. ✅ Email-уведомления при успехе/ошибке
+1. Чтение данных из CSV файла
+2. Трансформация данных
+3. Ветвление пайплайна по условию
+4. Retry-политика с экспоненциальной задержкой
+5. Email-уведомления
 
 ### Архитектура POC
 
 ```
-┌─────────────┐
-│   Start     │
-└──────┬──────┘
-       │
-       v
-┌─────────────────┐
-│  Read CSV Data  │  ← Чтение данных
-└──────┬──────────┘
-       │
-       v
-┌──────────────────┐
-│ Analyze & Branch │  ← Условное ветвление
-└────┬─────────┬───┘
-     │         │
-     v         v
-┌─────────┐ ┌─────────┐
-│ Large   │ │ Small   │  ← Разные стратегии обработки
-│ Volume  │ │ Volume  │
-└────┬────┘ └────┬────┘
-     │           │
-     └─────┬─────┘
+┌─────────────────────┐
+│  read_csv_job       │  ← Чтение CSV данных
+└──────────┬──────────┘
+           │
            v
-    ┌─────────────┐
-    │   Report    │  ← Генерация отчета
-    └──────┬──────┘
+┌─────────────────────────┐
+│  transform_data_job     │  ← Трансформация (bonus_money)
+└──────────┬──────────────┘
+           │
            v
-    ┌─────────────┐
-    │     End     │
-    └─────────────┘
+┌───────────────────────────────┐
+│  analyze_with_condition_job   │  ← Условное ветвление (random)
+└────────┬──────────────────┬───┘
+         │                  │
+         v                  v
+┌────────────────┐   ┌────────────────┐
+│ email_success  │   │  email_fail    │  ← Email уведомления
+└────────┬───────┘   └────────┬───────┘
+         │                    │
+         └──────────┬─────────┘
+                    v
+           ┌─────────────────┐
+           │  finalize_job   │  ← Финализация
+           └─────────────────┘
 ```
 
 ### Инструкция по запуску
@@ -103,60 +91,54 @@
 
 4. **Откройте Airflow UI**:
    - URL: http://localhost:8080
-   - Login: `admin`
-   - Password: `admin`
+   - Login: `airflow`
+   - Password: `airflow`
 
 5. **Откройте MailHog** (для просмотра email):
    - URL: http://localhost:8025
 
-6. **Активируйте и запустите DAG** `batch_processing_pipeline_poc`
+6. **Активируйте и запустите DAG** `task1_dag`
 
-### Демонстрация функционала
+### Как работает
 
-#### 1. Ветвление пайплайна
-Если записей > 500 → используется `process_large_volume`  
-Если записей ≤ 500 → используется `process_small_volume`
+#### 1. Ветвление
+На основе случайного условия (имитация реальной логики):
+- 50% → `email_success`
+- 50% → `email_fail`
 
-#### 2. Retry политика
+#### 2. Retry
 ```python
 default_args = {
-    'retries': 3,
-    'retry_delay': timedelta(minutes=2),
+    'retries': 2,
+    'retry_delay': timedelta(seconds=10),
     'retry_exponential_backoff': True,
 }
 ```
-При ошибке таск автоматически перезапускается до 3 раз с увеличивающейся задержкой.
+При ошибке задача перезапускается до 2 раз с увеличивающейся задержкой.
 
-#### 3. Email уведомления
+#### 3. Email
 ```python
 default_args = {
-    'email': ['alerts@company.com'],
+    'email': ['admin@example.com'],
     'email_on_failure': True,
     'email_on_retry': True,
-    'email_on_success': True,
 }
 ```
-Все уведомления видны в MailHog (http://localhost:8025)
+Используется `EmailOperator` для уведомлений. Все письма видны в MailHog (http://localhost:8025)
 
-### Скриншоты
-
-Скриншоты демонстрации находятся в папке `screenshots/`:
-1. `01_airflow_dags.png` - список DAG'ов
-2. `02_dag_graph.png` - граф пайплайна с ветвлением
-3. `03_dag_running.png` - выполнение DAG
-4. `04_task_retry.png` - демонстрация retry
-5. `05_email_notifications.png` - email в MailHog
-6. `06_logs.png` - логи выполнения
+#### 4. Обработка данных
+- Чтение CSV
+- Трансформация: `bonus_money = money * 2`
+- Условное ветвление
+- Финализация
 
 ---
 
-## Заключение
+## Выводы
 
-Apache Airflow полностью покрывает все требования:
-- ✅ Готовые интеграции с BigQuery, Redshift, Kafka, Spark
-- ✅ Ветвление, условия, event-triggers
-- ✅ Retry, fallback, email из коробки
-- ✅ Легкий переход в облако через MWAA/Cloud Composer
-- ✅ Масштабируется до миллионов записей
-
-**Локальное развертывание готово к production-переносу в облако без изменения кода DAG.**
+Apache Airflow подходит для задачи:
+- Готовые интеграции с BigQuery, Redshift, Kafka, Spark
+- Ветвление, условия, event-triggers
+- Retry, fallback, email из коробки
+- Можно развернуть в облаке (AWS, GCP)
+- Масштабируется до миллионов записей
