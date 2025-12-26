@@ -1,10 +1,24 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import pandas as pd
 import random
 
 from airflow import DAG
+from airflow.operators.email  import EmailOperator
 from airflow.operators.python import PythonOperator, BranchPythonOperator
+
+
+default_args = {
+    "owner": "admin",
+    "retries": 2,
+    "retry_delay": timedelta(seconds=10),
+    "retry_exponential_backoff": True,
+    # email “из коробки” при ошибке/ретрае
+    "email": ["admin@example.com"],
+    "email_on_failure": True,
+    "email_on_retry": True,
+}
+
 
 
 def read_csv():
@@ -22,16 +36,10 @@ def analyze_with_condition():
   df = pd.read_pickle('/opt/airflow/data/processed_data.pkl')
   print(f"Total bonus money: {df['bonus_money'].sum()}")
   if random.random() > 0.5:
-    return 'show_me_the_money_job'
+    return 'email_success'
   else:
-    return 'no_money_job'
+    return 'email_fail'
   
-
-def show_me_the_money():
-  print("Big bonus! Show me the money!")
-
-def no_money():
-  print("No big bonus this time.")
 
 def finalize():
   print("Pipeline finished.")
@@ -59,20 +67,31 @@ with DAG(
       python_callable=analyze_with_condition,
     )
 
-    show_me_the_money_task = PythonOperator(
-      task_id="show_me_the_money_job",
-      python_callable=show_me_the_money,
+    email_success = EmailOperator(
+        task_id="email_success",
+        to=["admin@example.com"],
+        subject="Airflow success",
+        html_content="""
+        <p>DAG success</p>
+        """,
+        trigger_rule="none_failed_min_one_success",
     )
 
-    no_money_task = PythonOperator(
-      task_id="no_money_job",
-      python_callable=no_money,
+    email_fail = EmailOperator(
+        task_id="email_fail",
+        to=["admin@example.com"],
+        subject="Airflow fail",
+        html_content="""
+        <p>DAG fail</p>
+        """,
+        trigger_rule="none_failed_min_one_success",
     )
 
     finalize_task = PythonOperator(
       task_id="finalize_job",
       python_callable=finalize,
+      trigger_rule='none_failed_min_one_success',
     )
 
     read_csv_task >> transform_data_task >> analyze_with_condition_task
-    analyze_with_condition_task >> [show_me_the_money_task, no_money_task] >> finalize_task
+    analyze_with_condition_task >> [ email_success, email_fail ] >> finalize_task

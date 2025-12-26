@@ -1,0 +1,13 @@
+{"timestamp":"2025-12-26T14:59:15.594229Z","level":"info","event":"DAG bundles loaded: dags-folder, example_dags","logger":"airflow.dag_processing.bundles.manager.DagBundlesManager","filename":"manager.py","lineno":179}
+{"timestamp":"2025-12-26T14:59:15.594835Z","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/example.py","logger":"airflow.models.dagbag.DagBag","filename":"dagbag.py","lineno":593}
+{"timestamp":"2025-12-26T14:59:15.603682Z","level":"warning","event":"The `airflow.operators.python.PythonOperator` attribute is deprecated. Please use `'airflow.providers.standard.operators.python.PythonOperator'`.","category":"DeprecatedImportWarning","filename":"/opt/airflow/dags/example.py","lineno":7,"logger":"py.warnings"}
+{"timestamp":"2025-12-26T14:59:15.603876Z","level":"warning","event":"The `airflow.operators.python.BranchPythonOperator` attribute is deprecated. Please use `'airflow.providers.standard.operators.python.BranchPythonOperator'`.","category":"DeprecatedImportWarning","filename":"/opt/airflow/dags/example.py","lineno":7,"logger":"py.warnings"}
+{"timestamp":"2025-12-26T14:59:15.619873Z","level":"info","event":"Task instance is in running state","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.620007Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.QUEUED","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.620228Z","level":"info","event":"Current task name:no_money_job","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.620283Z","level":"info","event":"Dag name:task1_dag","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.622204Z","level":"info","event":"No big bonus this time.","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.622241Z","level":"info","event":"Done. Returned value was: None","logger":"airflow.task.operators.airflow.providers.standard.operators.python.PythonOperator","filename":"python.py","lineno":215}
+{"timestamp":"2025-12-26T14:59:15.690531Z","level":"info","event":"Task instance in success state","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.690674Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.RUNNING","logger":"task.stdout"}
+{"timestamp":"2025-12-26T14:59:15.690876Z","level":"info","event":"Task operator:<Task(PythonOperator): no_money_job>","logger":"task.stdout"}
