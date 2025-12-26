@@ -13,7 +13,6 @@ default_args = {
     "retries": 2,
     "retry_delay": timedelta(seconds=10),
     "retry_exponential_backoff": True,
-    # email “из коробки” при ошибке/ретрае
     "email": ["admin@example.com"],
     "email_on_failure": True,
     "email_on_retry": True,
@@ -47,6 +46,7 @@ def finalize():
 
 with DAG(
     dag_id="task1_dag",
+    default_args=default_args,
     start_date=datetime(2025, 1, 1),
     schedule=None,
     catchup=False,
