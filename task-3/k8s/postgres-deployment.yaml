@@ -1,0 +1,76 @@
+---
+# PostgreSQL Deployment для демонстрации
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          value: "logistics"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-script
+        configMap:
+          name: postgres-init
+---
+# Service для PostgreSQL
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: default
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+# ConfigMap с SQL скриптом для инициализации БД
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: default
+data:
+  init.sql: |
+    -- Создание таблицы shipments (перевозки)
+    CREATE TABLE IF NOT EXISTS shipments (
+        id SERIAL PRIMARY KEY,
+        shipment_number VARCHAR(50) NOT NULL,
+        origin VARCHAR(100),
+        destination VARCHAR(100),
+        status VARCHAR(20),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Вставка тестовых данных
+    INSERT INTO shipments (shipment_number, origin, destination, status) VALUES
+    ('SH-001', 'Москва', 'Санкт-Петербург', 'delivered'),
+    ('SH-002', 'Казань', 'Екатеринбург', 'in_transit'),
+    ('SH-003', 'Новосибирск', 'Владивосток', 'pending'),
+    ('SH-004', 'Ростов-на-Дону', 'Краснодар', 'delivered'),
+    ('SH-005', 'Самара', 'Уфа', 'in_transit');

@@ -1,0 +1,49 @@
+---
+# CronJob для тестирования (запускается каждые 2 минуты)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: shipments-export-test
+  namespace: default
+spec:
+  # Расписание для тестирования: каждые 2 минуты
+  schedule: "*/2 * * * *"
+  
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: shipments-export-test
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: export-job
+            image: shipments-export:latest
+            imagePullPolicy: IfNotPresent
+            
+            env:
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "logistics"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres"
+            - name: OUTPUT_DIR
+              value: "/data"
+            
+            volumeMounts:
+            - name: data-volume
+              mountPath: /data
+          
+          volumes:
+          - name: data-volume
+            emptyDir: {}

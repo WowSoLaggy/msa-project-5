@@ -1,0 +1,55 @@
+---
+# CronJob для экспорта данных каждый день в 20:00
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: shipments-export
+  namespace: default
+spec:
+  # Расписание в формате Cron: каждый день в 20:00 (0 20 * * *)
+  # Для тестирования можно использовать: */2 * * * * (каждые 2 минуты)
+  schedule: "0 20 * * *"
+  
+  # Параметры выполнения
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid  # Не запускать новую job если предыдущая ещё выполняется
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: shipments-export
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: export-job
+            # Замените на ваш образ из Docker Hub или локального registry
+            image: shipments-export:latest
+            imagePullPolicy: IfNotPresent
+            
+            # Переменные окружения для подключения к БД
+            env:
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "logistics"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres"
+            - name: OUTPUT_DIR
+              value: "/data"
+            
+            # Монтирование volume для сохранения CSV файлов
+            volumeMounts:
+            - name: data-volume
+              mountPath: /data
+          
+          volumes:
+          - name: data-volume
+            emptyDir: {}  # Для демонстрации используем emptyDir
+            # В продакшене можно использовать PersistentVolumeClaim
