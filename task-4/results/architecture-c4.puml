@@ -1,0 +1,35 @@
+@startuml spring-batch-architecture
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Архитектура системы TradeWare со Spring Batch
+
+Person(warehouse_user, "Сотрудник склада", "Загружает отчёты об остатках")
+Person(manager, "Менеджер", "Просматривает остатки и отчёты")
+
+System_Boundary(tradeware, "TradeWare Platform") {
+    Container(web_app, "Web Application", "Angular", "Интерфейс для загрузки CSV и просмотра данных")
+    
+    Container(java_monolith, "Java Monolith", "WildFly, Java 11", "Валидация, API, бизнес-логика")
+    
+    Container(batch_app, "Spring Batch Service", "Spring Boot, Spring Batch", "Пакетная обработка CSV файлов: ETL операции")
+    
+    ContainerDb(postgres, "PostgreSQL", "PostgreSQL", "products, loyality_data, BATCH_*")
+    
+    Container(gcs, "Google Cloud Storage", "GCS", "Хранение CSV файлов")
+}
+
+Rel(warehouse_user, web_app, "Загружает CSV отчёт", "HTTPS")
+Rel(manager, web_app, "Просматривает данные", "HTTPS")
+
+Rel(web_app, java_monolith, "Валидирует и сохраняет файл", "REST API")
+Rel(java_monolith, gcs, "Сохраняет CSV", "GCS API")
+Rel(java_monolith, batch_app, "Запускает batch job", "REST API / Message Queue")
+
+Rel(batch_app, gcs, "Читает CSV файлы", "GCS API")
+Rel(batch_app, postgres, "Читает loyality_data\nЗаписывает products", "JDBC")
+
+Rel(java_monolith, postgres, "Читает данные\nдля отображения", "JDBC")
+
+@enduml
