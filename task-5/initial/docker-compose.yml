@@ -83,6 +83,7 @@ services:
       - '3000:3000'
     environment:
       - 'GF_USERS_ALLOW_SIGN_UP=false'
+      - 'GF_ALERTING_ENABLED=true'
     volumes:
       - './grafana/provisioning:/etc/grafana/provisioning'
     depends_on:
@@ -93,10 +94,12 @@ services:
   app:
     depends_on:
       - postgresdb
-      - filebeat1
+      - filebeat
       - grafana
     image: batch-processing
     build:
       context: .
       dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
     restart: no
