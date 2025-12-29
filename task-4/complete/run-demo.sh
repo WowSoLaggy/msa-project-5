@@ -12,7 +12,7 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
+if ! command -v docker compose &> /dev/null; then
     echo "❌ Docker Compose не установлен. Установите Docker Compose и повторите попытку."
     exit 1
 fi
@@ -28,11 +28,11 @@ if [ ! -f "docker-compose.yml" ]; then
 fi
 
 echo "📦 Остановка старых контейнеров (если есть)..."
-docker-compose down -v 2>/dev/null || true
+docker compose down -v 2>/dev/null || true
 
 echo ""
 echo "🚀 Запуск PostgreSQL..."
-docker-compose up -d postgresdb
+docker compose up -d postgresdb
 
 echo ""
 echo "⏳ Ожидание готовности PostgreSQL (15 секунд)..."
@@ -49,7 +49,7 @@ docker exec -i $(docker ps -qf "name=postgresdb") psql -U postgres -d productsdb
 
 echo ""
 echo "🔨 Сборка и запуск Spring Batch приложения..."
-docker-compose up --build app
+docker compose up --build app
 
 echo ""
 echo "✅ Готово! Проверьте логи выше."

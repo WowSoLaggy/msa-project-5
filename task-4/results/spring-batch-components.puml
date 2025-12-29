@@ -32,21 +32,4 @@ Rel(processor, postgres, "SELECT loyality_data\nWHERE productSku=?", "JDBC")
 Rel(writer, postgres, "INSERT INTO products", "JDBC Batch")
 Rel(job_repo, postgres, "CRUD операции\nс BATCH_* таблицами", "JDBC")
 
-note right of step
-  **Chunk Processing:**
-  1. Читает 3 записи (chunk=3)
-  2. Обрабатывает каждую через Processor
-  3. Записывает все 3 одним batch
-  4. Commit транзакции
-  5. Повторяет до конца файла
-end note
-
-note right of processor
-  **Трансформация:**
-  - Получает Product из CSV
-  - Запрашивает loyality_data по SKU
-  - Обновляет productData новым значением
-  - Возвращает обновлённый Product
-end note
-
 @enduml
