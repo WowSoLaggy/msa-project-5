@@ -1,0 +1,30 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Архитектура решения
+
+Person(client, "B2B Клиент", "Корпоративный клиент магазина")
+
+System_Boundary(k8s, "Kubernetes Cluster (Cloud)") {
+    Container(cronjob, "CronJob", "K8s Resource", "Запуск по расписанию:\n0 6 * * * (ежедневно в 6:00)")
+    
+    Container(pod, "Export Worker", "Python Container", "1. Читает данные из БД\n2. Генерирует CSV\n3. Загружает в хранилище")
+    
+    ContainerDb(db, "PostgreSQL", "Database", "products (5-10K)\ncategories (50-200)\nclients (100-500)\nclient_prices (10-20K)")
+    
+    Container(monitoring, "Prometheus", "Monitoring", "Метрики выполнения")
+}
+
+System_Ext(storage, "S3/MinIO", "Хранилище файлов")
+
+Rel(cronjob, pod, "Создаёт Pod", "K8s API")
+Rel(pod, db, "SELECT с JOIN", "SQL")
+Rel(pod, storage, "Загружает CSV", "S3 API")
+Rel(pod, monitoring, "Метрики", "HTTP")
+Rel(client, storage, "Скачивает прайсы", "HTTPS")
+
+LAYOUT_TOP_DOWN()
+
+@enduml

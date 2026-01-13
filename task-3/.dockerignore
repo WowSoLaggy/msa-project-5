@@ -1,0 +1,18 @@
+# Добавляем в .dockerignore ненужные файлы
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.git/
+.gitignore
+README.md
+k8s/
+*.sh
+*.ps1
+results/

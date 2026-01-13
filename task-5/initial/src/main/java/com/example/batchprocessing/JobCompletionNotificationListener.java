@@ -1,5 +1,7 @@
 package com.example.batchprocessing;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +18,31 @@ public class JobCompletionNotificationListener implements JobExecutionListener {
 	private static final Logger log = LoggerFactory.getLogger(JobCompletionNotificationListener.class);
 
 	private final JdbcTemplate jdbcTemplate;
+	private final Counter jobCompletedCounter;
+	private final Counter jobFailedCounter;
 
-	public JobCompletionNotificationListener(JdbcTemplate jdbcTemplate) {
+	public JobCompletionNotificationListener(JdbcTemplate jdbcTemplate, MeterRegistry meterRegistry) {
 		this.jdbcTemplate = jdbcTemplate;
+		this.jobCompletedCounter = Counter.builder("batch.job.completed")
+			.description("Number of completed jobs")
+			.register(meterRegistry);
+		this.jobFailedCounter = Counter.builder("batch.job.failed")
+			.description("Number of failed jobs")
+			.register(meterRegistry);
 	}
 
 	@Override
 	public void afterJob(JobExecution jobExecution) {
 		if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
-			// todo
+			log.info("!!! JOB FINISHED! Time to verify the results");
+			jobCompletedCounter.increment();
+
+			jdbcTemplate
+					.query("SELECT productId, productSku, productName, productAmount, productData FROM products", new DataClassRowMapper<>(Product.class))
+					.forEach(person -> log.info("Transformed <{}> in the database.", person));
+		} else if (jobExecution.getStatus() == BatchStatus.FAILED) {
+			log.error("!!! JOB FAILED!");
+			jobFailedCounter.increment();
 		}
 	}
 }

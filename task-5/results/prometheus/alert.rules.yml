@@ -1,0 +1,23 @@
+groups:
+  - name: batch_processing_alerts
+    interval: 10s
+    rules:
+      - alert: BatchJobFailed
+        expr: batch_job_failed_total{job="batch-processing"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: batch-processing
+        annotations:
+          summary: "Batch job failed"
+          description: "Batch job has failed. Current failed count: {{ $value }}"
+          
+      - alert: HighCPUUsage
+        expr: process_cpu_usage{job="batch-processing"} * 100 > 80
+        for: 1m
+        labels:
+          severity: warning
+          component: batch-processing
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80%. Current value: {{ $value }}%"

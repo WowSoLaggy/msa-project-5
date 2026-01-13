@@ -2,6 +2,7 @@ package com.example.batchprocessing;
 
 import javax.sql.DataSource;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -21,34 +22,52 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 @Configuration
 public class BatchConfiguration {
 
+	@Autowired
+	private MeterRegistry meterRegistry;
+
 	@Bean
 	public FlatFileItemReader<Product> reader() {
 		return new FlatFileItemReaderBuilder<Product>()
-			//todo
+			.name("productItemReader")
+			.resource(new ClassPathResource("product-data.csv"))
+			.delimited()
+			.names("productId", "productSku","productName", "productAmount", "productData")
 			.targetType(Product.class)
 			.build();
 	}
 
 	@Bean
 	public ProductItemProcessor processor() {
-		return new ProductItemProcessor();
+		return new ProductItemProcessor(meterRegistry);
 	}
 
 	@Bean
 	public JdbcBatchItemWriter<Product> writer(DataSource dataSource) {
-		return //todo
-
+		return new JdbcBatchItemWriterBuilder<Product>()
+			.sql("INSERT INTO products (productId, productSku, productName, productAmount, productData) " +
+					"VALUES (:productId, :productSku, :productName, :productAmount, :productData)")
+			.dataSource(dataSource)
+			.beanMapped()
+			.build();
 	}
 
 	@Bean
 	public Job importProductJob(JobRepository jobRepository, Step step1, JobCompletionNotificationListener listener) {
-		return //todo
+		return new JobBuilder("importProductJob", jobRepository)
+			.listener(listener)
+			.start(step1)
+			.build();
 	}
 
 	@Bean
 	public Step step1(JobRepository jobRepository, DataSourceTransactionManager transactionManager,
 					  FlatFileItemReader<Product> reader, ProductItemProcessor processor, JdbcBatchItemWriter<Product> writer) {
-		return //todo
+		return new StepBuilder("step1", jobRepository)
+			.<Product, Product>chunk(3, transactionManager)
+			.reader(reader)
+			.processor(processor)
+			.writer(writer)
+			.build();
 	}
 
 }

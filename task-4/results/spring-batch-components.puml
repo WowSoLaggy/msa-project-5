@@ -1,0 +1,35 @@
+@startuml spring-batch-detailed
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Spring Batch - Детальная архитектура компонентов
+
+Container_Boundary(batch_service, "Spring Batch Service") {
+    Component(job, "importProductJob", "Spring Batch Job", "Оркестрирует процесс ETL")
+    Component(step, "step1", "Spring Batch Step", "Chunk-based обработка (chunk=3)")
+    
+    Component(reader, "FlatFileItemReader", "ItemReader", "Читает product-data.csv\nПарсит в Product объекты")
+    Component(processor, "ProductItemProcessor", "ItemProcessor", "Обогащает данными из loyality_data\nОбновляет productData")
+    Component(writer, "JdbcBatchItemWriter", "ItemWriter", "Batch INSERT в products\n(пакетами по chunk size)")
+    
+    Component(listener, "JobCompletionListener", "JobExecutionListener", "Логирует результаты выполнения")
+    Component(job_repo, "JobRepository", "Spring Batch Metadata", "Хранит историю запусков\nстатусы, метрики")
+}
+
+ContainerDb(postgres, "PostgreSQL", "Database", "products\nloyality_data\nBATCH_* таблицы")
+
+Rel(job, step, "Запускает")
+Rel(job, listener, "Уведомляет о завершении")
+Rel(job, job_repo, "Записывает метаданные")
+
+Rel(step, reader, "Читает данные")
+Rel(step, processor, "Обрабатывает")
+Rel(step, writer, "Записывает")
+
+Rel(reader, postgres, "Читает CSV\n(product-data.csv)")
+Rel(processor, postgres, "SELECT loyality_data\nWHERE productSku=?", "JDBC")
+Rel(writer, postgres, "INSERT INTO products", "JDBC Batch")
+Rel(job_repo, postgres, "CRUD операции\nс BATCH_* таблицами", "JDBC")
+
+@enduml

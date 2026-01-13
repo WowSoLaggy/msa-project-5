@@ -1,0 +1,55 @@
+@startuml spring-batch-architecture-monitoring
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Архитектура системы TradeWare со Spring Batch и мониторингом
+
+Person(warehouse_user, "Сотрудник склада", "Загружает отчёты об остатках")
+Person(manager, "Менеджер", "Просматривает остатки и отчёты")
+Person(devops, "DevOps", "Мониторинг и анализ логов")
+
+System_Boundary(tradeware, "TradeWare Platform") {
+    Container(web_app, "Web Application", "Angular", "Интерфейс для загрузки CSV и просмотра данных")
+    
+    Container(java_monolith, "Java Monolith", "WildFly, Java 11", "Валидация, API, бизнес-логика")
+    
+    Container(batch_app, "Spring Batch Service", "Spring Boot, Spring Batch", "Пакетная обработка CSV файлов: ETL операции")
+    
+    ContainerDb(postgres, "PostgreSQL", "PostgreSQL", "products, loyality_data, BATCH_*")
+    
+    Container(gcs, "Google Cloud Storage", "GCS", "Хранение CSV файлов")
+}
+
+System_Boundary(monitoring, "Monitoring & Logging Stack") {
+    Container(prometheus, "Prometheus", "Prometheus", "Сбор метрик")
+    Container(grafana, "Grafana", "Grafana", "Визуализация метрик и оповещения")
+    Container(filebeat, "Filebeat", "Filebeat", "Сбор логов из Docker")
+    Container(logstash, "Logstash", "Logstash", "Обработка и трансформация логов")
+    Container(elasticsearch, "Elasticsearch", "Elasticsearch", "Хранение логов")
+    Container(kibana, "Kibana", "Kibana", "Визуализация и поиск логов")
+}
+
+Rel(warehouse_user, web_app, "Загружает CSV отчёт", "HTTPS")
+Rel(manager, web_app, "Просматривает данные", "HTTPS")
+Rel(devops, grafana, "Просматривает метрики", "HTTPS")
+Rel(devops, kibana, "Анализирует логи", "HTTPS")
+
+Rel(web_app, java_monolith, "Валидирует и сохраняет файл", "REST API")
+Rel(java_monolith, gcs, "Сохраняет CSV", "GCS API")
+Rel(java_monolith, batch_app, "Запускает batch job", "REST API / Message Queue")
+
+Rel(batch_app, gcs, "Читает CSV файлы", "GCS API")
+Rel(batch_app, postgres, "Читает loyality_data\nЗаписывает products", "JDBC")
+
+Rel(java_monolith, postgres, "Читает данные\nдля отображения", "JDBC")
+
+Rel(batch_app, prometheus, "Экспорт метрик", "HTTP /actuator/prometheus")
+Rel(prometheus, grafana, "Запрос метрик", "HTTP")
+Rel(batch_app, filebeat, "Логи через stdout", "Docker logs")
+Rel(filebeat, logstash, "Отправка логов", "Beats protocol")
+Rel(logstash, elasticsearch, "Индексация логов", "HTTP")
+Rel(elasticsearch, kibana, "Запрос логов", "HTTP")
+
+@enduml
+
